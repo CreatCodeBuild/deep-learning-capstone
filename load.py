@@ -47,7 +47,7 @@ def reformat(dataset, labels):
 			one_hot[num] = 1.0
 		one_hot_labels.append(one_hot)
 	labels = np.array(one_hot_labels).astype(np.float32)
-	return dataset, labels
+	return dataset/256.0, labels
 
 
 train_dataset, train_labels = reformat(train_samples, train_labels)
@@ -56,12 +56,16 @@ test_dataset, test_labels = reformat(test_samples, test_labels)
 
 if __name__ == '__main__':
 	import matplotlib.pyplot as plt
-	plt.imshow(train_dataset[3000])
-	print(train_labels[3000])
+
+	plt.imshow(train_dataset[4000])
+	print(train_labels[4000])
 	plt.show()
-	plt.imshow(train_dataset[2000])
-	print(train_labels[2000])
-	plt.show()
+
+	for x in train_labels:
+		if sum(x) != 1.0:
+			print(x)
+	print(sum([sum(x) for x in train_labels]))
+
 	# exploration
 	# d = {}
 	# for l in train_labels:

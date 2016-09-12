@@ -1,1 +1,4 @@
 *.mat
+*.pyc
+data/
+model/

@@ -10,7 +10,7 @@ image_size = load.image_size
 num_labels = load.num_labels
 num_channels = load.num_channels # R G B
 num_hidden = 64
-num_steps = 10001
+num_steps = 5001
 
 
 def accuracy(predictions, labels):
@@ -31,19 +31,18 @@ def run_session():
 			}
 			_, l, predictions = \
 			session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
-			if (step % 50 == 0):
+			if (step % 100 == 0):
 				print('Minibatch loss at step %d: %f' % (step, l))
 				print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels))
 				# print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels))
-		# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
-		save_path = saver.save(session, "./model/model.ckpt")
+		print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
 
 
 
 ### Start
 train_dataset, train_labels = load.train_dataset, load.train_labels
 # valid_dataset, valid_labels = reformat(valid_dataset, valid_labels)
-test_dataset, test_labels   = load.test_dataset,  load.test_labels
+test_dataset, test_labels = load.test_dataset,  load.test_labels
 print('Training set', train_dataset.shape, train_labels.shape)
 # print('Validation set', valid_dataset.shape, valid_labels.shape)
 print('Test set', test_dataset.shape, test_labels.shape)
@@ -126,7 +125,7 @@ with graph.as_default():
 		# Add a 50% dropout during training only. Dropout also scales
 		# activations such that no rescaling is needed at evaluation time.
 		if isTrain:
-			hidden = tf.nn.dropout(hidden, 0.5, seed=4926)
+			hidden = tf.nn.dropout(hidden, 0.5, seed=1234)
 
 		return tf.matmul(hidden, layer4_weights) + layer4_biases
 
@@ -144,14 +143,15 @@ with graph.as_default():
 	# todo: momentum?
 	global_step = tf.Variable(0)
 	learning_rate = tf.train.exponential_decay(
-		learning_rate=0.01,
-		global_step=global_step * batch_size,
-		decay_steps=train_labels.shape[0],
-		decay_rate=0.95,
+		0.05,
+		global_step * batch_size,
+		train_labels.shape[0],
+		0.95,
 		staircase=True
 	)
 
 	# Optimizer.
+	# optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
 	optimizer = tf.train \
 		.MomentumOptimizer(learning_rate, 0.9) \
 		.minimize(loss, global_step=global_step)
@@ -160,7 +160,6 @@ with graph.as_default():
 	train_prediction = tf.nn.softmax(logits)
 	# valid_prediction = tf.nn.softmax(model(tf_valid_dataset))
 	test_prediction = tf.nn.softmax(model(tf_test_dataset))
-	saver = tf.train.Saver(tf.all_variables())
 
 if __name__ == '__main__':
 	run_session()

@@ -16,28 +16,13 @@ test_labels = test['y']
 num_labels = 10
 image_size = 32
 num_channels = 3
-print(train_labels[2000])
+
 def reformat(dataset, labels):
 	# Because each element in labels is a length 1 array,
 	# we need to get rid of it
 	# num_images = dataset.shape[3]
 	labels = np.array([x[0] for x in labels])	# slow code, whatever
-	# newArray = np.full(
-	# 	shape=(num_images, image_size, image_size, num_channels),
-	# 	fill_value=0.0,
-	# 	dtype=np.float32
-	# )
-	# for i in range(num_images):
-	# 	for x in range(image_size):
-	# 		for y in range(image_size):
-	# 			for z in range(num_channels):
-	# 				newArray[i][x][y][z] = dataset[x][y][z][i]
-
-	# dataset = dataset \
-	# 	.reshape((-1, image_size, image_size, num_channels)) \
-	# 	.astype(np.float32)
 	dataset = np.transpose(dataset, (3, 0, 1, 2)).astype(np.float32)
-	# labels = (np.arange(num_labels) == labels[:,None].astype(np.float32)
 	one_hot_labels = []
 	for num in labels:
 		one_hot = [0.0] * 10
@@ -47,7 +32,8 @@ def reformat(dataset, labels):
 			one_hot[num] = 1.0
 		one_hot_labels.append(one_hot)
 	labels = np.array(one_hot_labels).astype(np.float32)
-	return dataset/256.0, labels
+	# linearly normalize the image value from 0 - 255 to -1.0 to 1.0
+	return dataset/128.0 - 1.0, labels
 
 
 train_dataset, train_labels = reformat(train_samples, train_labels)

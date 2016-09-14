@@ -247,7 +247,7 @@ if __name__ == '__main__':
 	# )
 	# net3.run_session()
 
-	# net3 = Net(
+	# net4 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=5,
@@ -261,9 +261,9 @@ if __name__ == '__main__':
 		# optimizer='adam',
 	# 	train_csv='record/train6.csv', test_csv='record/test6.csv'
 	# )
-	# net3.run_session()
+	# net4.run_session()
 
-	# net4 = Net(
+	# net5 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -277,9 +277,9 @@ if __name__ == '__main__':
 	# 	decay_rate=0.99,
 	# 	train_csv='record/train7.csv', test_csv='record/test7.csv'
 	# )
-	# net4.run_session()
+	# net5.run_session()
 
-	# net5 = Net(
+	# net6 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -293,9 +293,9 @@ if __name__ == '__main__':
 	# 	decay_rate=0.99,
 	# 	train_csv='record/train8.csv', test_csv='record/test8.csv'
 	# )
-	# net5.run_session()
+	# net6.run_session()
 
-	# net6 = Net(
+	# net7 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -309,9 +309,9 @@ if __name__ == '__main__':
 	# 	decay_rate=0.99,
 	# 	train_csv='record/train9.csv', test_csv='record/test9.csv'
 	# )
-	# net6.run_session()
+	# net7.run_session()
 
-	# net7 = Net(
+	# net8 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -325,9 +325,9 @@ if __name__ == '__main__':
 	# 	decay_rate=0.9,
 	# 	train_csv='record/train10.csv', test_csv='record/test10.csv'
 	# )
-	# net7.run_session()
+	# net8.run_session()
 
-	# net8 = Net(
+	# net9 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -341,9 +341,9 @@ if __name__ == '__main__':
 	# 	decay_rate=0.99,
 	# 	train_csv='record/train11.csv', test_csv='record/test11.csv'
 	# )
-	# net8.run_session()
+	# net9.run_session()
 
-	# net9 = Net(
+	# net10 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
 	# 	patch_size=7,
@@ -357,4 +357,4 @@ if __name__ == '__main__':
 	# 	decay_rate=0.99,
 	# 	train_csv='record/train12.csv', test_csv='record/test12.csv'
 	# )
-	# net9.run_session()
+	# net10.run_session()

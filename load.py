@@ -1,5 +1,6 @@
 from __future__ import print_function
 from scipy.io import loadmat as load
+import matplotlib.pyplot as plt
 import numpy as np
 
 # Load data
@@ -33,31 +34,25 @@ def reformat(dataset, labels):
 		one_hot_labels.append(one_hot)
 	labels = np.array(one_hot_labels).astype(np.float32)
 	# linearly normalize the image value from 0 - 255 to -1.0 to 1.0
-	return dataset/128.0 - 1.0, labels
+	return dataset, labels
 
+def normalize(dataset):
+	return dataset/128.0 - 1.0
 
-train_dataset, train_labels = reformat(train_samples, train_labels)
-# valid_dataset, valid_labels = reformat(valid_dataset, valid_labels)
-test_dataset, test_labels = reformat(test_samples, test_labels)
+_train_dataset, train_labels = reformat(train_samples, train_labels)
+_test_dataset, test_labels = reformat(test_samples, test_labels)
+
+train_dataset = normalize(_train_dataset)
+test_dataset = normalize(_test_dataset)
+
+def inspect(i, normalized):
+	if normalized:
+		plt.imshow(train_dataset[i])
+	else:
+		plt.imshow(_train_dataset[i])
+	plt.show()
+	print(train_labels[i])
 
 if __name__ == '__main__':
-	import matplotlib.pyplot as plt
-
-	plt.imshow(train_dataset[4000])
-	print(train_labels[4000])
-	plt.show()
-
-	for x in train_labels:
-		if sum(x) != 1.0:
-			print(x)
-	print(sum([sum(x) for x in train_labels]))
-
 	# exploration
-	# d = {}
-	# for l in train_labels:
-	# 	if l[0] in d:
-	# 		d[l[0]] += 1
-	# 	else:
-	# 		d[l[0]] = 1
-	# for k, v in d.items():
-	# 	print(k, v)
+	pass

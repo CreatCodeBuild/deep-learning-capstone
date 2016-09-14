@@ -20,7 +20,11 @@ num_labels = load.num_labels
 num_channels = load.num_channels # R G B
 
 class Net():
-	def __init__(self, num_hidden, batch_size, patch_size, conv1_depth, conv2_depth, pooling_stride, drop_out_rate, num_steps, train_csv, test_csv):
+	def __init__(self,
+		num_hidden, batch_size, patch_size, conv1_depth, conv2_depth,
+		pooling_stride, drop_out_rate, num_steps, optimizer,
+		base_learning_rate, decay_rate,
+		train_csv, test_csv):
 		# hyper parameters
 		self.num_hidden = num_hidden
 		self.batch_size = batch_size
@@ -31,6 +35,9 @@ class Net():
 		self.pooling_stride = pooling_stride
 		self.drop_out_rate = drop_out_rate
 		self.num_steps = num_steps
+		self.optimizer = optimizer # adam, momentum, gradient
+		self.base_learning_rate = base_learning_rate
+		self.decay_rate = decay_rate
 		self.train_csv = train_csv
 		self.test_csv = test_csv
 
@@ -49,12 +56,12 @@ class Net():
 			# conv1 layer 1
 			# "layer1_weights" is a terrible naming, better to name it "conv1_filter"
 			conv1_filter = tf.Variable(
-				tf.truncated_normal([3, 3, num_channels, self.conv1_depth], stddev=0.1))
+				tf.truncated_normal([self.patch_size, self.patch_size, num_channels, self.conv1_depth], stddev=0.1))
 			conv1_biases = tf.Variable(tf.zeros([self.conv1_depth]))
 
 			# conv layer 2
 			conv2_filter = tf.Variable(
-				tf.truncated_normal([3, 3, self.conv1_depth, self.conv2_depth], stddev=0.1))
+				tf.truncated_normal([self.patch_size, self.patch_size, self.conv1_depth, self.conv2_depth], stddev=0.1))
 			conv2_biases = tf.Variable(tf.constant(0.1, shape=[self.conv2_depth]))
 
 			# layer 3, fully connected
@@ -112,22 +119,32 @@ class Net():
 			# learning rate decay
 			# todo: momentum?
 			global_step = tf.Variable(0)
+			lr = self.base_learning_rate
+			dr = self.decay_rate
+			print(lr, dr, type(lr))
 			learning_rate = tf.train.exponential_decay(
-				0.0013,
+				# 0.0013,
+				lr,
 				global_step * self.batch_size,
 				100,
-				0.99,
+				# 0.99,
+				dr,
 				staircase=True
 			)
 
 			# Optimizer.
-			# optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
-			# optimizer = tf.train \
-			# 	.MomentumOptimizer(learning_rate, 0.2) \
-			# 	.minimize(loss, global_step=global_step)
-			optimizer = tf.train \
-				.AdamOptimizer(learning_rate) \
-				.minimize(loss)
+			if self.optimizer == 'gradient':
+				optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
+			elif self.optimizer == 'momentum':
+				optimizer = tf.train \
+					.MomentumOptimizer(learning_rate, 0.2) \
+					.minimize(loss, global_step=global_step)
+			elif self.optimizer == 'adam':
+				optimizer = tf.train \
+					.AdamOptimizer(learning_rate) \
+					.minimize(loss)
+			else:
+				raise Error('Wrong Optimizer')
 
 			# Predictions for the training, validation, and test data.
 			train_prediction = tf.nn.softmax(logits)
@@ -191,19 +208,153 @@ if __name__ == '__main__':
 	# 	pooling_stride=2,
 	# 	drop_out_rate=0.9,
 	# 	num_steps=5001,
+		# base_learning_rate=0.0013,
+		# decay_rate=0.99,
+		# optimizer='adam'
 	# 	train_csv='record/train3.csv', test_csv='record/test3.csv'
 	# )
 	# net1.run_session()
 
-	net2 = Net(
-		num_hidden=64,
-		batch_size=64,
-		patch_size=5,
-		conv1_depth=32,
-		conv2_depth=32,
-		pooling_stride=2,
-		drop_out_rate=0.9,
-		num_steps=5001,
-		train_csv='record/train4.csv', test_csv='record/test4.csv'
-	)
-	net2.run_session()
+	# net2 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=3,
+	# 	conv1_depth=32,
+	# 	conv2_depth=32,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+		# base_learning_rate=0.0013,
+		# decay_rate=0.99,
+		# optimizer='adam'
+	# 	train_csv='record/train4.csv', test_csv='record/test4.csv'
+	# )
+	# net2.run_session()
+
+	# net3 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=5,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+		# base_learning_rate=0.0013,
+		# decay_rate=0.99,
+		# optimizer='adam'
+	# 	train_csv='record/train5.csv', test_csv='record/test5.csv'
+	# )
+	# net3.run_session()
+
+	# net3 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=5,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.5,
+	# 	num_steps=5001,
+		# base_learning_rate=0.0013,
+		# decay_rate=0.99,
+		# optimizer='adam'
+	# 	train_csv='record/train6.csv', test_csv='record/test6.csv'
+	# )
+	# net3.run_session()
+
+	# net4 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='adam',
+	# 	base_learning_rate=0.0013,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train7.csv', test_csv='record/test7.csv'
+	# )
+	# net4.run_session()
+
+	# net5 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='adam',
+	# 	base_learning_rate=0.005,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train8.csv', test_csv='record/test8.csv'
+	# )
+	# net5.run_session()
+
+	# net6 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='adam',
+	# 	base_learning_rate=0.0005,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train9.csv', test_csv='record/test9.csv'
+	# )
+	# net6.run_session()
+
+	# net7 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='adam',
+	# 	base_learning_rate=0.0013,
+	# 	decay_rate=0.9,
+	# 	train_csv='record/train10.csv', test_csv='record/test10.csv'
+	# )
+	# net7.run_session()
+
+	# net8 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='gradient',
+	# 	base_learning_rate=0.0013,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train11.csv', test_csv='record/test11.csv'
+	# )
+	# net8.run_session()
+
+	# net9 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='momentum',
+	# 	base_learning_rate=0.0013,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train12.csv', test_csv='record/test12.csv'
+	# )
+	# net9.run_session()

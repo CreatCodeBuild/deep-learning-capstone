@@ -210,7 +210,7 @@ if __name__ == '__main__':
 	# 	num_steps=5001,
 		# base_learning_rate=0.0013,
 		# decay_rate=0.99,
-		# optimizer='adam'
+		# optimizer='adam',
 	# 	train_csv='record/train3.csv', test_csv='record/test3.csv'
 	# )
 	# net1.run_session()
@@ -218,7 +218,7 @@ if __name__ == '__main__':
 	# net2 = Net(
 	# 	num_hidden=64,
 	# 	batch_size=64,
-	# 	patch_size=3,
+	# 	patch_size=5,
 	# 	conv1_depth=32,
 	# 	conv2_depth=32,
 	# 	pooling_stride=2,
@@ -226,7 +226,7 @@ if __name__ == '__main__':
 	# 	num_steps=5001,
 		# base_learning_rate=0.0013,
 		# decay_rate=0.99,
-		# optimizer='adam'
+		# optimizer='adam',
 	# 	train_csv='record/train4.csv', test_csv='record/test4.csv'
 	# )
 	# net2.run_session()
@@ -242,7 +242,7 @@ if __name__ == '__main__':
 	# 	num_steps=5001,
 		# base_learning_rate=0.0013,
 		# decay_rate=0.99,
-		# optimizer='adam'
+		# optimizer='adam',
 	# 	train_csv='record/train5.csv', test_csv='record/test5.csv'
 	# )
 	# net3.run_session()
@@ -258,7 +258,7 @@ if __name__ == '__main__':
 	# 	num_steps=5001,
 		# base_learning_rate=0.0013,
 		# decay_rate=0.99,
-		# optimizer='adam'
+		# optimizer='adam',
 	# 	train_csv='record/train6.csv', test_csv='record/test6.csv'
 	# )
 	# net3.run_session()

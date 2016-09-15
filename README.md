@@ -40,6 +40,10 @@ if __name__ == '__main__':
 # Note
 git ignores .mat files. Please download data sets from http://ufldl.stanford.edu/housenumbers/
 
+Then create data/ dir and put them in this dir
+
+You need train_32x32.mat and test_32x32.mat
+
 Report is in report/report.pdf
 
 record/ contains all the result data

@@ -68,6 +68,17 @@ def distribution():
 		x.append(k)
 		y.append(v)
 	# draw x, y
+	# the histogram of the data
+	objects = x
+	y_pos = np.arange(len(objects))
+	performance = y
+
+	plt.bar(y_pos, performance, align='center', alpha=0.5)
+	plt.xticks(y_pos, objects)
+	plt.ylabel('Count')
+	plt.title('Digit Distribution')
+
+	plt.show()
 
 
 if __name__ == '__main__':

@@ -39,8 +39,8 @@ def reformat(dataset, labels):
 def normalize(dataset):
 	return dataset/128.0 - 1.0
 
-_train_dataset, train_labels = reformat(train_samples, train_labels)
-_test_dataset, test_labels = reformat(test_samples, test_labels)
+_train_dataset, _train_labels = reformat(train_samples, train_labels)
+_test_dataset, _test_labels = reformat(test_samples, test_labels)
 
 train_dataset = normalize(_train_dataset)
 test_dataset = normalize(_test_dataset)
@@ -53,6 +53,24 @@ def inspect(i, normalized):
 	plt.show()
 	print(train_labels[i])
 
+def distribution():
+	count_test = {}
+	for label in test_labels:
+		# print(label)
+		if (0 if label[0] == 10 else label[0]) in count_test:
+			count_test[0 if label[0] == 10 else label[0]] += 1
+		else:
+			count_test[0 if label[0] == 10 else label[0]] = 1
+	x = []
+	y = []
+	for k, v in count_test.items():
+		print(k, v)
+		x.append(k)
+		y.append(v)
+	# draw x, y
+
+
 if __name__ == '__main__':
 	# exploration
-	pass
+	# get data distribution
+	distribution()

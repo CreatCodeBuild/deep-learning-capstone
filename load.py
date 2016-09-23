@@ -53,35 +53,32 @@ def inspect(i, normalized):
 	plt.show()
 	print(train_labels[i])
 
-def distribution():
-	count_test = {}
-	for label in test_labels:
-		# print(label)
-		if (0 if label[0] == 10 else label[0]) in count_test:
-			count_test[0 if label[0] == 10 else label[0]] += 1
+def distribution(labels, name):
+	count = {}
+	for label in labels:
+		if (0 if label[0] == 10 else label[0]) in count:
+			count[0 if label[0] == 10 else label[0]] += 1
 		else:
-			count_test[0 if label[0] == 10 else label[0]] = 1
+			count[0 if label[0] == 10 else label[0]] = 1
 	x = []
 	y = []
-	for k, v in count_test.items():
+	for k, v in count.items():
 		print(k, v)
 		x.append(k)
 		y.append(v)
 	# draw x, y
-	# the histogram of the data
 	objects = x
 	y_pos = np.arange(len(objects))
 	performance = y
-
 	plt.bar(y_pos, performance, align='center', alpha=0.5)
 	plt.xticks(y_pos, objects)
 	plt.ylabel('Count')
-	plt.title('Digit Distribution')
-
+	plt.title(name + ' Label Distribution')
 	plt.show()
 
 
 if __name__ == '__main__':
 	# exploration
 	# get data distribution
-	distribution()
+	distribution(train_labels, 'Train')
+	distribution(test_labels, 'Test')

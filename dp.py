@@ -5,13 +5,14 @@ import tensorflow as tf
 from six.moves import range
 import numpy as np
 import csv
+from sklearn.cross_validation import KFold
 ### My module
 import load
 
 
 ### Start
-train_dataset, train_labels = load.train_dataset, load.train_labels
-test_dataset, test_labels = load.test_dataset,  load.test_labels
+train_dataset, train_labels = load._train_dataset, load._train_labels
+test_dataset, test_labels = load._test_dataset,  load._test_labels
 print('Training set', train_dataset.shape, train_labels.shape)
 print('    Test set', test_dataset.shape, test_labels.shape)
 
@@ -40,6 +41,8 @@ class Net():
 		self.decay_rate = decay_rate
 		self.train_csv = train_csv
 		self.test_csv = test_csv
+		self.saver = None
+		self.graph = None
 
 
 	# define our computational graph
@@ -149,12 +152,17 @@ class Net():
 			# Predictions for the training, validation, and test data.
 			train_prediction = tf.nn.softmax(logits)
 			test_prediction = tf.nn.softmax(model(tf_test_dataset))
-		return graph, train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
+			self.saver = tf.train.Saver(tf.all_variables())
+		# print(tf_train_dataset, type(tf_train_dataset))
+		# print(tf_train_labels)
+		self.graph = graph
+		return train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
 
 	def run_session(self):
-		graph, train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
+		train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
 		def accuracy(predictions, labels):
-		  return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
+			# print(type(predictions), type(labels))
+		 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 
 		def run_dataset(samples, labels, record_csv):
 			'''
@@ -184,18 +192,46 @@ class Net():
 						# print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels))
 				return total_loss/self.num_steps, total_accu/self.num_steps
 
-		with tf.Session(graph=graph) as session:
+		with tf.Session(graph=self.graph) as session:
 			tf.initialize_all_variables().run()
-			# ###
+			###
 			print('Start Training')
 			average_loss, average_accuracy = run_dataset(train_dataset, train_labels, self.train_csv)
 			print('Average Loss:', average_loss)
 			print('Average Accuracy:', average_accuracy)
+
+			###
+			### todo: Memory Explosion, TensorFlow issue
+			###
+			# print('Start Cross Validation')
+			# kFold = KFold(len(train_dataset), n_folds=10, shuffle=True, random_state=1234)
+			# for train_index, test_index in kFold:
+			# 	kf_train_samples, kf_test_samples = train_dataset[train_index], train_dataset[test_index]
+			# 	kf_train_labels, kf_test_labels = train_labels[train_index], train_labels[test_index]
+
+			###
+			### todo: Memory Explosion, TensorFlow issue
 			###
 			print('Start Testing')
-			average_loss, average_accuracy = run_dataset(test_dataset, test_labels, self.test_csv)
-			print('Average Loss:', average_loss)
-			print('Average Accuracy:', average_accuracy)
+			# average_loss, average_accuracy = run_dataset(test_dataset, test_labels, self.test_csv)
+			save_path = self.saver.save(session, "model/model.ckpt")
+			print("Model saved in file: %s" % save_path)
+			# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
+			# print('Average Loss:', average_loss)
+			# print('Average Accuracy:', average_accuracy)
+
+	def test(self):
+		# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
+		# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
+		if self.saver is None:
+			graph, train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
+			= self.define_graph()
+		with tf.Session(graph=graph) as session:
+		  # Restore variables from disk.
+		  self.saver.restore(session, "model/model.ckpt")
+		  print("Model restored.")
+		  print(type(tf.all_variables()))
+		  # Do some work with the model
 
 
 if __name__ == '__main__':
@@ -343,18 +379,52 @@ if __name__ == '__main__':
 	# )
 	# net9.run_session()
 
-	net10 = Net(
-		num_hidden=64,
-		batch_size=64,
+	# net10 = Net(
+	# 	num_hidden=64,
+	# 	batch_size=64,
+	# 	patch_size=7,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.9,
+	# 	num_steps=5001,
+	# 	optimizer='momentum',
+	# 	base_learning_rate=0.0013,
+	# 	decay_rate=0.99,
+	# 	train_csv='record/train12.csv', test_csv='record/test12.csv'
+	# )
+	# net10.run_session()
+
+	# netBenchmark = Net(
+	# 	num_hidden=64,
+	# 	batch_size=128,
+	# 	patch_size=5,
+	# 	conv1_depth=16,
+	# 	conv2_depth=16,
+	# 	pooling_stride=2,
+	# 	drop_out_rate=0.5,
+	# 	num_steps=5001,
+	# 	optimizer='gradient',
+	# 	base_learning_rate=0.05,
+	# 	decay_rate=0.95,
+	# 	train_csv='record/train_bench.csv', test_csv='record/test_bench.csv'
+	# )
+	# # netBenchmark.run_session()
+
+	netDebug = Net(
+		num_hidden=128,
+		batch_size=128,
 		patch_size=7,
-		conv1_depth=16,
-		conv2_depth=16,
+		conv1_depth=32,
+		conv2_depth=32,
 		pooling_stride=2,
 		drop_out_rate=0.9,
-		num_steps=5001,
-		optimizer='momentum',
+		num_steps=10001,
+		optimizer='adam',
 		base_learning_rate=0.0013,
 		decay_rate=0.99,
-		train_csv='record/train12.csv', test_csv='record/test12.csv'
+		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
 	)
-	net10.run_session()
+	# netDebug.run_session()
+	netDebug.test()
+	# netDebug.define_graph()

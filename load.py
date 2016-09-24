@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division
 from scipy.io import loadmat as load
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +16,7 @@ test_labels = test['y']
 # global configuration / hyper parameters
 num_labels = 10
 image_size = 32
-num_channels = 3
+num_channels = 1
 
 def reformat(dataset, labels):
 	# Because each element in labels is a length 1 array,
@@ -36,14 +36,20 @@ def reformat(dataset, labels):
 	# linearly normalize the image value from 0 - 255 to -1.0 to 1.0
 	return dataset, labels
 
+# to Gray-scale
 def normalize(dataset):
-	return dataset/128.0 - 1.0
+	a = np.add.reduce(dataset, keepdims=True, axis=3)
+	a = a/3.0
+	# print(a.shape)
+	return a/128.0 - 1.0
 
 _train_dataset, _train_labels = reformat(train_samples, train_labels)
 _test_dataset, _test_labels = reformat(test_samples, test_labels)
 
-train_dataset = normalize(_train_dataset)
-test_dataset = normalize(_test_dataset)
+_train_dataset = normalize(_train_dataset)
+_test_dataset = normalize(_test_dataset)
+_test_dataset = _test_dataset[:2000]
+_test_labels = _test_labels[:2000]
 
 def inspect(i, normalized):
 	if normalized:
@@ -77,8 +83,11 @@ def distribution(labels, name):
 	plt.show()
 
 
+### todo: Try Gray-scale it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 if __name__ == '__main__':
 	# exploration
 	# get data distribution
-	distribution(train_labels, 'Train')
-	distribution(test_labels, 'Test')
+	# distribution(train_labels, 'Train')
+	# distribution(test_labels, 'Test')
+	inspect(1000, _train_dataset)

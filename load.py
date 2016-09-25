@@ -48,8 +48,6 @@ _test_dataset, _test_labels = reformat(test_samples, test_labels)
 
 _train_dataset = normalize(_train_dataset)
 _test_dataset = normalize(_test_dataset)
-_test_dataset = _test_dataset[:2000]
-_test_labels = _test_labels[:2000]
 
 def inspect(i, normalized):
 	if normalized:

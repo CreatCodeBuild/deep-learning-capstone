@@ -20,13 +20,26 @@ image_size = load.image_size
 num_labels = load.num_labels
 num_channels = load.num_channels # R G B
 
+def get_chunk(samples, labels, chunkSize):
+	'''
+	Iterator: get a batch of data
+	'''
+	stepStart = 0	# initial step
+	while stepStart < len(samples):
+		stepEnd = stepStart + chunkSize
+		if stepEnd < len(samples):
+			yield samples[stepStart:stepEnd], labels[stepStart:stepEnd]
+		# else:
+		# 	yield samples[stepStart:], labels[stepStart:]
+		stepStart = stepEnd
+
 class Net():
 	def __init__(self,
 		num_hidden, batch_size, patch_size, conv1_depth, conv2_depth,
 		pooling_stride, drop_out_rate, num_steps, optimizer,
 		base_learning_rate, decay_rate,
 		train_csv, test_csv):
-		# hyper parameters
+		# Hyper parameters
 		self.num_hidden = num_hidden
 		self.batch_size = batch_size
 		self.patch_size = patch_size	# filter size
@@ -39,11 +52,21 @@ class Net():
 		self.optimizer = optimizer # adam, momentum, gradient
 		self.base_learning_rate = base_learning_rate
 		self.decay_rate = decay_rate
+
+		# IO
 		self.train_csv = train_csv
 		self.test_csv = test_csv
+
+		# Graph Variables
 		self.saver = None
 		self.graph = None
+		self.tf_train_dataset = None
+		self.tf_train_labels = None
+		self.tf_test_dataset = None
+		self.test_prediction = None
 
+		# Test
+		self.testing_batch_size = 500
 
 	# define our computational graph
 	def define_graph(self):
@@ -53,7 +76,7 @@ class Net():
 			tf_train_dataset = tf.placeholder(tf.float32, shape=(self.batch_size, image_size, image_size, num_channels))
 			tf_train_labels  = tf.placeholder(tf.float32, shape=(self.batch_size, num_labels))
 			# tf_valid_dataset = tf.constant(valid_dataset)
-			tf_test_dataset  = tf.constant(test_dataset)
+			tf_test_dataset  = tf.placeholder(tf.float32, shape=(self.testing_batch_size, image_size, image_size, num_channels))
 
 			# Variables.
 			# conv1 layer 1
@@ -156,14 +179,15 @@ class Net():
 		# print(tf_train_dataset, type(tf_train_dataset))
 		# print(tf_train_labels)
 		self.graph = graph
-		return train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
+		self.tf_train_dataset = tf_train_dataset
+		self.tf_train_labels = tf_train_labels
+		self.tf_test_dataset = tf_test_dataset
+		self.test_prediction = test_prediction
+		return train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
 
 	def run_session(self):
-		train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
-		def accuracy(predictions, labels):
-			# print(type(predictions), type(labels))
-		 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
-
+		train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
+		= self.define_graph()
 		def run_dataset(samples, labels, record_csv):
 			'''
 			@return: average loss, average accuracy
@@ -183,7 +207,7 @@ class Net():
 					}
 					_, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
 					total_loss += l
-					accu = accuracy(predictions, batch_labels)
+					accu = self.accuracy(predictions, batch_labels)
 					total_accu += accu
 					writer.writerow({'iteration': step, 'loss': l, 'accuracy': accu})
 					if (step % 50 == 0):
@@ -199,16 +223,6 @@ class Net():
 			average_loss, average_accuracy = run_dataset(train_dataset, train_labels, self.train_csv)
 			print('Average Loss:', average_loss)
 			print('Average Accuracy:', average_accuracy)
-
-			###
-			### todo: Memory Explosion, TensorFlow issue
-			###
-			# print('Start Cross Validation')
-			# kFold = KFold(len(train_dataset), n_folds=10, shuffle=True, random_state=1234)
-			# for train_index, test_index in kFold:
-			# 	kf_train_samples, kf_test_samples = train_dataset[train_index], train_dataset[test_index]
-			# 	kf_train_labels, kf_test_labels = train_labels[train_index], train_labels[test_index]
-
 			###
 			### todo: Memory Explosion, TensorFlow issue
 			###
@@ -221,17 +235,23 @@ class Net():
 			# print('Average Accuracy:', average_accuracy)
 
 	def test(self):
-		# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
-		# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
 		if self.saver is None:
-			graph, train_prediction, test_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
+			train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
 			= self.define_graph()
-		with tf.Session(graph=graph) as session:
-		  # Restore variables from disk.
-		  self.saver.restore(session, "model/model.ckpt")
-		  print("Model restored.")
-		  print(type(tf.all_variables()))
-		  # Do some work with the model
+		with tf.Session(graph=self.graph) as session:
+			self.saver.restore(session, "model/model.ckpt")
+			print("Model restored.")
+			for samples, labels in get_chunk(test_dataset, test_labels, chunkSize=self.testing_batch_size):
+				result = self.test_prediction.eval(
+					feed_dict= {
+						self.tf_test_dataset: samples
+					})
+				print('Test accuracy: %.1f%%' % self.accuracy(result, labels))
+
+
+	def accuracy(self, predictions, labels):
+	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
+
 
 
 if __name__ == '__main__':
@@ -414,17 +434,17 @@ if __name__ == '__main__':
 	netDebug = Net(
 		num_hidden=128,
 		batch_size=128,
-		patch_size=7,
+		patch_size=5,
 		conv1_depth=32,
 		conv2_depth=32,
 		pooling_stride=2,
 		drop_out_rate=0.9,
 		num_steps=10001,
 		optimizer='adam',
-		base_learning_rate=0.0013,
+		base_learning_rate=0.001,
 		decay_rate=0.99,
 		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
 	)
-	# netDebug.run_session()
+	netDebug.run_session()
 	netDebug.test()
 	# netDebug.define_graph()

@@ -5,7 +5,7 @@ import tensorflow as tf
 from six.moves import range
 import numpy as np
 import csv
-from sklearn.cross_validation import KFold
+from sklearn.metrics import confusion_matrix
 ### My module
 import load
 
@@ -18,7 +18,7 @@ print('    Test set', test_dataset.shape, test_labels.shape)
 
 image_size = load.image_size
 num_labels = load.num_labels
-num_channels = load.num_channels # R G B
+num_channels = load.num_channels
 
 def get_chunk(samples, labels, chunkSize):
 	'''
@@ -194,7 +194,7 @@ class Net():
 					}
 					_, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
 					total_loss += l
-					accu = self.accuracy(predictions, batch_labels)
+					accu, _ = self.accuracy(predictions, batch_labels)
 					total_accu += accu
 					writer.writerow({'iteration': step, 'loss': l, 'accuracy': accu})
 					if (step % 50 == 0):
@@ -218,19 +218,42 @@ class Net():
 			self.saver.restore(session, "model/model.ckpt")
 			print("Model Restored")
 			accuracies = []
+			confusionMatrices = []
 			for samples, labels in get_chunk(test_dataset, test_labels, chunkSize=self.testing_batch_size):
 				result = self.test_prediction.eval(feed_dict={self.tf_test_dataset: samples})
-				accuracy = self.accuracy(result, labels)
+				accuracy, cm = self.accuracy(result, labels, need_confusion_matrix=True)
 				accuracies.append(accuracy)
+				confusionMatrices.append(cm)
 				print('Test accuracy: %.1f%%' % accuracy)
-			print(' Average  Accuracy:', np.average(accuracies))
-			print('Standard Deviation:', np.std(accuracies))
+			print('  Average  Accuracy:', np.average(accuracies))
+			print(' Standard Deviation:', np.std(accuracies))
+			print('Confusion    Matrix:\n', np.add.reduce(confusionMatrices))
+			print(np.sum(confusionMatrices))
 
-	def accuracy(self, predictions, labels):
-	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
+	def accuracy(self, predictions, labels, need_confusion_matrix=False):
+		# == is overloaded for numpy array
+		cm = confusion_matrix(np.argmax(labels, 1), np.argmax(predictions, 1)) if need_confusion_matrix else None
+	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0]), cm
 
 
 if __name__ == '__main__':
+	netDebug = Net(
+		num_hidden=128,
+		batch_size=128,
+		patch_size=5,
+		conv1_depth=32,
+		conv2_depth=32,
+		pooling_stride=2,
+		drop_out_rate=0.9,
+		num_steps=10001,
+		optimizer='adam',
+		base_learning_rate=0.001,
+		decay_rate=0.99,
+		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
+	)
+	# netDebug.run_session()
+	netDebug.test()
+
 	# net1 = Net(
 	# 	num_hidden=128,
 	# 	batch_size=128,
@@ -406,20 +429,3 @@ if __name__ == '__main__':
 	# 	train_csv='record/train_bench.csv', test_csv='record/test_bench.csv'
 	# )
 	# # netBenchmark.run_session()
-
-	netDebug = Net(
-		num_hidden=128,
-		batch_size=128,
-		patch_size=5,
-		conv1_depth=32,
-		conv2_depth=32,
-		pooling_stride=2,
-		drop_out_rate=0.9,
-		num_steps=10001,
-		optimizer='adam',
-		base_learning_rate=0.001,
-		decay_rate=0.99,
-		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
-	)
-	# netDebug.run_session()
-	netDebug.test()

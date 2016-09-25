@@ -40,7 +40,6 @@ def reformat(dataset, labels):
 def normalize(dataset):
 	a = np.add.reduce(dataset, keepdims=True, axis=3)
 	a = a/3.0
-	# print(a.shape)
 	return a/128.0 - 1.0
 
 _train_dataset, _train_labels = reformat(train_samples, train_labels)

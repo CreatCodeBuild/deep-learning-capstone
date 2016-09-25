@@ -29,7 +29,7 @@ def get_chunk(samples, labels, chunkSize):
 		stepEnd = stepStart + chunkSize
 		if stepEnd < len(samples):
 			yield samples[stepStart:stepEnd], labels[stepStart:stepEnd]
-		# else:
+		# else: # do not else
 		# 	yield samples[stepStart:], labels[stepStart:]
 		stepStart = stepEnd
 
@@ -138,22 +138,14 @@ class Net():
 				tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
 
 			# L2 regularization for the fully connected parameters
-			regularization = tf.nn.l2_loss(fc1_weights) + tf.nn.l2_loss(fc1_biases) + \
-			                 tf.nn.l2_loss(fc2_weights) + tf.nn.l2_loss(fc2_biases)
+			regularization = tf.nn.l2_loss(fc1_weights) + tf.nn.l2_loss(fc1_biases) + tf.nn.l2_loss(fc2_weights) + tf.nn.l2_loss(fc2_biases)
 			loss += 5e-4 * regularization
 
 			# learning rate decay
-			# todo: momentum?
 			global_step = tf.Variable(0)
 			lr = self.base_learning_rate
 			dr = self.decay_rate
-			print(lr, dr, type(lr))
-			learning_rate = tf.train.exponential_decay(
-				lr,
-				global_step * self.batch_size,
-				100,
-				dr,
-				staircase=True)
+			learning_rate = tf.train.exponential_decay(lr, global_step*self.batch_size, 100, dr, staircase=True)
 
 			# Optimizer.
 			if self.optimizer == 'gradient':
@@ -167,7 +159,7 @@ class Net():
 					.AdamOptimizer(learning_rate) \
 					.minimize(loss)
 			else:
-				raise Error('Wrong Optimizer')
+				raise Error(self.optimizer + ' is not an optimizer')
 
 			# Predictions for the training, validation, and test data.
 			train_prediction = tf.nn.softmax(logits)
@@ -182,8 +174,7 @@ class Net():
 		return train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
 
 	def train(self):
-		train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
-		= self.define_graph()
+		train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
 		def run_dataset(samples, labels, record_csv):
 			'''
 			@return: average loss, average accuracy
@@ -213,7 +204,6 @@ class Net():
 
 		with tf.Session(graph=self.graph) as session:
 			tf.initialize_all_variables().run()
-			###
 			print('Start Training')
 			average_loss, average_accuracy = run_dataset(train_dataset, train_labels, self.train_csv)
 			print('Average Loss:', average_loss)
@@ -223,14 +213,18 @@ class Net():
 
 	def test(self):
 		if self.saver is None:
-			train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
-			= self.define_graph()
+			train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
 		with tf.Session(graph=self.graph) as session:
 			self.saver.restore(session, "model/model.ckpt")
 			print("Model Restored")
+			accuracies = []
 			for samples, labels in get_chunk(test_dataset, test_labels, chunkSize=self.testing_batch_size):
 				result = self.test_prediction.eval(feed_dict={self.tf_test_dataset: samples})
-				print('Test accuracy: %.1f%%' % self.accuracy(result, labels))
+				accuracy = self.accuracy(result, labels)
+				accuracies.append(accuracy)
+				print('Test accuracy: %.1f%%' % accuracy)
+			print(' Average  Accuracy:', np.average(accuracies))
+			print('Standard Deviation:', np.std(accuracies))
 
 	def accuracy(self, predictions, labels):
 	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
@@ -427,6 +421,5 @@ if __name__ == '__main__':
 		decay_rate=0.99,
 		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
 	)
-	netDebug.run_session()
+	# netDebug.run_session()
 	netDebug.test()
-	# netDebug.define_graph()

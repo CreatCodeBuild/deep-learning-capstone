@@ -149,14 +149,11 @@ class Net():
 			dr = self.decay_rate
 			print(lr, dr, type(lr))
 			learning_rate = tf.train.exponential_decay(
-				# 0.0013,
 				lr,
 				global_step * self.batch_size,
 				100,
-				# 0.99,
 				dr,
-				staircase=True
-			)
+				staircase=True)
 
 			# Optimizer.
 			if self.optimizer == 'gradient':
@@ -176,8 +173,7 @@ class Net():
 			train_prediction = tf.nn.softmax(logits)
 			test_prediction = tf.nn.softmax(model(tf_test_dataset))
 			self.saver = tf.train.Saver(tf.all_variables())
-		# print(tf_train_dataset, type(tf_train_dataset))
-		# print(tf_train_labels)
+
 		self.graph = graph
 		self.tf_train_dataset = tf_train_dataset
 		self.tf_train_labels = tf_train_labels
@@ -185,7 +181,7 @@ class Net():
 		self.test_prediction = test_prediction
 		return train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels
 
-	def run_session(self):
+	def train(self):
 		train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels \
 		= self.define_graph()
 		def run_dataset(samples, labels, record_csv):
@@ -213,7 +209,6 @@ class Net():
 					if (step % 50 == 0):
 						print('Minibatch loss at step %d: %f' % (step, l))
 						print('Minibatch accuracy: %.1f%%' % accu)
-						# print('Validation accuracy: %.1f%%' % accuracy(valid_prediction.eval(), valid_labels))
 				return total_loss/self.num_steps, total_accu/self.num_steps
 
 		with tf.Session(graph=self.graph) as session:
@@ -223,16 +218,8 @@ class Net():
 			average_loss, average_accuracy = run_dataset(train_dataset, train_labels, self.train_csv)
 			print('Average Loss:', average_loss)
 			print('Average Accuracy:', average_accuracy)
-			###
-			### todo: Memory Explosion, TensorFlow issue
-			###
-			print('Start Testing')
-			# average_loss, average_accuracy = run_dataset(test_dataset, test_labels, self.test_csv)
 			save_path = self.saver.save(session, "model/model.ckpt")
 			print("Model saved in file: %s" % save_path)
-			# print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
-			# print('Average Loss:', average_loss)
-			# print('Average Accuracy:', average_accuracy)
 
 	def test(self):
 		if self.saver is None:
@@ -240,18 +227,13 @@ class Net():
 			= self.define_graph()
 		with tf.Session(graph=self.graph) as session:
 			self.saver.restore(session, "model/model.ckpt")
-			print("Model restored.")
+			print("Model Restored")
 			for samples, labels in get_chunk(test_dataset, test_labels, chunkSize=self.testing_batch_size):
-				result = self.test_prediction.eval(
-					feed_dict= {
-						self.tf_test_dataset: samples
-					})
+				result = self.test_prediction.eval(feed_dict={self.tf_test_dataset: samples})
 				print('Test accuracy: %.1f%%' % self.accuracy(result, labels))
-
 
 	def accuracy(self, predictions, labels):
 	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
-
 
 
 if __name__ == '__main__':

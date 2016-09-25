@@ -1,6 +1,6 @@
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
-from __future__ import print_function
+from __future__ import print_function, division
 import tensorflow as tf
 from six.moves import range
 import numpy as np
@@ -38,13 +38,15 @@ class Net():
 		num_hidden, batch_size, patch_size, conv1_depth, conv2_depth,
 		pooling_stride, drop_out_rate, num_steps, optimizer,
 		base_learning_rate, decay_rate,
-		train_csv, test_csv):
+		train_csv, test_csv, model_name):
 		# Hyper parameters
 		self.num_hidden = num_hidden
 		self.batch_size = batch_size
 		self.patch_size = patch_size	# filter size
 		self.conv1_depth = conv1_depth
 		self.conv2_depth = conv2_depth
+		self.conv3_depth = conv2_depth
+		self.conv4_depth = conv2_depth
 		self.last_conv_depth = conv2_depth
 		self.pooling_stride = pooling_stride
 		self.drop_out_rate = drop_out_rate
@@ -56,6 +58,7 @@ class Net():
 		# IO
 		self.train_csv = train_csv
 		self.test_csv = test_csv
+		self.model_name = model_name
 
 		# Graph Variables
 		self.saver = None
@@ -78,9 +81,7 @@ class Net():
 			# tf_valid_dataset = tf.constant(valid_dataset)
 			tf_test_dataset  = tf.placeholder(tf.float32, shape=(self.testing_batch_size, image_size, image_size, num_channels))
 
-			# Variables.
 			# conv1 layer 1
-			# "layer1_weights" is a terrible naming, better to name it "conv1_filter"
 			conv1_filter = tf.Variable(
 				tf.truncated_normal([self.patch_size, self.patch_size, num_channels, self.conv1_depth], stddev=0.1))
 			conv1_biases = tf.Variable(tf.zeros([self.conv1_depth]))
@@ -90,14 +91,24 @@ class Net():
 				tf.truncated_normal([self.patch_size, self.patch_size, self.conv1_depth, self.conv2_depth], stddev=0.1))
 			conv2_biases = tf.Variable(tf.constant(0.1, shape=[self.conv2_depth]))
 
-			# layer 3, fully connected
+			# conv layer 3
+			conv3_filter = tf.Variable(
+				tf.truncated_normal([self.patch_size, self.patch_size, self.conv2_depth, self.conv2_depth], stddev=0.1))
+			conv3_biases = tf.Variable(tf.constant(0.1, shape=[self.conv3_depth]))
+
+			# conv layer 4
+			conv4_filter = tf.Variable(
+				tf.truncated_normal([self.patch_size, self.patch_size, self.conv3_depth, self.conv3_depth], stddev=0.1))
+			conv4_biases = tf.Variable(tf.constant(0.1, shape=[self.conv4_depth]))
+
+			# fully connected layer 1, fully connected
 			down_scale = self.pooling_stride ** 2	# because we do 2 times pooling of stride 2
 			fc1_weights = tf.Variable(
 				tf.truncated_normal(
 					[image_size // down_scale * image_size // down_scale * self.last_conv_depth, self.num_hidden], stddev=0.1))
 			fc1_biases = tf.Variable(tf.constant(0.1, shape=[self.num_hidden]))
 
-			# layer 4
+			# fully connected layer 2
 			fc2_weights = tf.Variable(
 				tf.truncated_normal([self.num_hidden, num_labels], stddev=0.1))
 			fc2_biases = tf.Variable(tf.constant(0.1, shape=[num_labels]))
@@ -107,15 +118,27 @@ class Net():
 				# conv layer 1
 				conv1 = tf.nn.conv2d(data, conv1_filter, [1, 1, 1, 1], padding='SAME')
 				hidden = tf.nn.relu(conv1 + conv1_biases)
+				# hidden = tf.nn.max_pool(
+				# 	hidden,
+				# 	[1,self.pooling_stride,self.pooling_stride,1],
+				# 	[1,self.pooling_stride,self.pooling_stride,1],
+				# 	padding='SAME')
+
+				# conv layer 2
+				conv2 = tf.nn.conv2d(hidden, conv2_filter, [1, 1, 1, 1], padding='SAME')
+				hidden = tf.nn.relu(conv2 + conv2_biases)
 				hidden = tf.nn.max_pool(
 					hidden,
 					[1,self.pooling_stride,self.pooling_stride,1],
 					[1,self.pooling_stride,self.pooling_stride,1],
 					padding='SAME')
 
-				# conv layer 2
-				conv2 = tf.nn.conv2d(hidden, conv2_filter, [1, 1, 1, 1], padding='SAME')
-				hidden = tf.nn.relu(conv2 + conv2_biases)
+				# conv layer 3
+				conv3 = tf.nn.conv2d(hidden, conv3_filter, [1, 1, 1, 1], padding='SAME')
+				hidden = tf.nn.relu(conv3 + conv3_biases)
+
+				conv4 = tf.nn.conv2d(hidden, conv4_filter, [1, 1, 1, 1], padding='SAME')
+				hidden = tf.nn.relu(conv4 + conv4_biases)
 				hidden = tf.nn.max_pool(
 					hidden,
 					[1,self.pooling_stride,self.pooling_stride,1],
@@ -208,14 +231,14 @@ class Net():
 			average_loss, average_accuracy = run_dataset(train_dataset, train_labels, self.train_csv)
 			print('Average Loss:', average_loss)
 			print('Average Accuracy:', average_accuracy)
-			save_path = self.saver.save(session, "model/model.ckpt")
+			save_path = self.saver.save(session, 'model/'+self.model_name)
 			print("Model saved in file: %s" % save_path)
 
 	def test(self):
 		if self.saver is None:
 			train_prediction, optimizer, loss, tf_train_dataset, tf_train_labels = self.define_graph()
 		with tf.Session(graph=self.graph) as session:
-			self.saver.restore(session, "model/model.ckpt")
+			self.saver.restore(session, 'model/'+self.model_name)
 			print("Model Restored")
 			accuracies = []
 			confusionMatrices = []
@@ -227,8 +250,13 @@ class Net():
 				print('Test accuracy: %.1f%%' % accuracy)
 			print('  Average  Accuracy:', np.average(accuracies))
 			print(' Standard Deviation:', np.std(accuracies))
-			print('Confusion    Matrix:\n', np.add.reduce(confusionMatrices))
-			print(np.sum(confusionMatrices))
+			confusionMatrix = np.add.reduce(confusionMatrices)
+			print('Confusion    Matrix:')
+			for i, line in enumerate(confusionMatrix):
+				print(line, line[i]/np.sum(line))
+			for i, column in enumerate(np.transpose(confusionMatrix, (1, 0))):
+				print(column[i]/np.sum(column),)
+			print('\n',np.sum(confusionMatrix))
 
 	def accuracy(self, predictions, labels, need_confusion_matrix=False):
 		# == is overloaded for numpy array
@@ -249,9 +277,10 @@ if __name__ == '__main__':
 		optimizer='adam',
 		base_learning_rate=0.001,
 		decay_rate=0.99,
-		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv'
+		train_csv='record/train_debug.csv', test_csv='record/test_debug.csv',
+		model_name='4conv2pool.ckpt'
 	)
-	# netDebug.run_session()
+	# netDebug.train()
 	netDebug.test()
 
 	# net1 = Net(

@@ -242,7 +242,9 @@ class Net():
 			print("Model Restored")
 			accuracies = []
 			confusionMatrices = []
+			i = 0
 			for samples, labels in get_chunk(test_dataset, test_labels, chunkSize=self.testing_batch_size):
+				print(i,); i += 1
 				result = self.test_prediction.eval(feed_dict={self.tf_test_dataset: samples})
 				accuracy, cm = self.accuracy(result, labels, need_confusion_matrix=True)
 				accuracies.append(accuracy)
@@ -262,8 +264,11 @@ class Net():
 
 	def accuracy(self, predictions, labels, need_confusion_matrix=False):
 		# == is overloaded for numpy array
-		cm = confusion_matrix(np.argmax(labels, 1), np.argmax(predictions, 1)) if need_confusion_matrix else None
-	 	return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0]), cm
+		_predictions = np.argmax(predictions, 1)
+		_labels = np.argmax(labels, 1)
+		print(_predictions[0], _labels[0])
+		cm = confusion_matrix(_labels, _predictions) if need_confusion_matrix else None
+	 	return (100.0 * np.sum(_predictions == _labels) / predictions.shape[0]), cm
 
 
 if __name__ == '__main__':

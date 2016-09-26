@@ -8,7 +8,7 @@ I used Python2 to write this project.
 
 Open your terminal
 ```
-# You need to create a ./data dir at your working dir
+# You need to create a ./data dir at your working dir when first time running it
 python dp.py
 ```
 This will run the default routine.

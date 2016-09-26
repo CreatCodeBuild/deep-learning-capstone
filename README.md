@@ -4,10 +4,11 @@ Deep Learning Capstone Project for Udacity's Machine Learning Nanodegree
 # How to run it
 You need tensorflow installed in your system to run it. TensorFlow only supports Linux and Mac right now.
 
-I used Python2 to write this project. You need to create a ./data dir at your working dir
+I used Python2 to write this project.
 
 Open your terminal
 ```
+# You need to create a ./data dir at your working dir
 python dp.py
 ```
 This will run the default routine.

@@ -27,15 +27,20 @@ net = dp.Net(
 	optimizer='momentum',
 	base_learning_rate=0.0013,
 	decay_rate=0.99,
-	train_csv='record/train.csv', test_csv='record/test.csv'
+	train_csv='record/train.csv', test_csv='record/test.csv',
+	model_name='model.ckpt'
 )
-net.run_session()
+net.train()
+net.test()
 ```
 You can of course just open dp.py and modify code directly in the secion
 ```
 if __name__ == '__main__':
     # Your code here
 ```
+After you call net.train(), a model with your specified name will be created in ./data dir
+
+Then you can call net.test() to resotre the model without calling train() again.
 
 # Note
 git ignores .mat files. Please download data sets from http://ufldl.stanford.edu/housenumbers/

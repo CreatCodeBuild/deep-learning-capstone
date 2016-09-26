@@ -3,4 +3,4 @@
 data/
 model/
 *.csv#
-report/~$report.docx
+report/~*

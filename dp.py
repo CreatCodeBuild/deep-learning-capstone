@@ -254,9 +254,11 @@ class Net():
 			print('Confusion    Matrix:')
 			for i, line in enumerate(confusionMatrix):
 				print(line, line[i]/np.sum(line))
+			a = 0
 			for i, column in enumerate(np.transpose(confusionMatrix, (1, 0))):
+				a += (column[i]/np.sum(column))*(np.sum(column)/26000)
 				print(column[i]/np.sum(column),)
-			print('\n',np.sum(confusionMatrix))
+			print('\n',np.sum(confusionMatrix), a)
 
 	def accuracy(self, predictions, labels, need_confusion_matrix=False):
 		# == is overloaded for numpy array

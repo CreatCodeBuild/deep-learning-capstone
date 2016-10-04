@@ -1,3 +1,6 @@
+# pre pre process
+# first let's clean up the shitty raw digitStruct.mat
+
 from __future__ import print_function, division
 from scipy.io import loadmat as load
 import matplotlib.pyplot as plt
